@@ -26,6 +26,9 @@ UPLOAD_FOLDER = Path(__file__).parent / "static" / "images"
 UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 
+# Quick patch: branded public path for QR / links (also served below).
+MENU_PUBLIC_PATH = "/HarrisCreperie/menu"
+
 # Ensure DB exists on startup
 init_db()
 
@@ -49,6 +52,7 @@ def save_uploaded_file(file) -> str | None:
 
 @app.route("/")
 @app.route("/menu")
+@app.route(MENU_PUBLIC_PATH)
 def menu():
     return render_template("index.html", categories=get_menu_by_category())
 
@@ -59,7 +63,7 @@ def menu_qr():
     proto = (request.headers.get("X-Forwarded-Proto") or request.scheme).split(",")[0].strip()
     host = (request.headers.get("X-Forwarded-Host") or request.host).split(",")[0].strip()
     base = f"{proto}://{host}".rstrip("/")
-    menu_url = base + url_for("menu")
+    menu_url = base + MENU_PUBLIC_PATH
 
     buf = io.BytesIO()
     segno.make(menu_url).save(buf, kind="png", scale=8)
