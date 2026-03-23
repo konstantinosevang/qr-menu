@@ -1,11 +1,12 @@
 """Flask menu server. Run: python app.py"""
+import io
 import os
 import socket
 import uuid
 from pathlib import Path
 
 import segno
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, Response, redirect, render_template, request, url_for
 
 from database import (
     add_category,
@@ -50,6 +51,20 @@ def save_uploaded_file(file) -> str | None:
 @app.route("/menu")
 def menu():
     return render_template("index.html", categories=get_menu_by_category())
+
+
+@app.route("/qr")
+def menu_qr():
+    """PNG QR code for the public menu URL (works behind Render / reverse proxies)."""
+    proto = (request.headers.get("X-Forwarded-Proto") or request.scheme).split(",")[0].strip()
+    host = (request.headers.get("X-Forwarded-Host") or request.host).split(",")[0].strip()
+    base = f"{proto}://{host}".rstrip("/")
+    menu_url = base + url_for("menu")
+
+    buf = io.BytesIO()
+    segno.make(menu_url).save(buf, kind="png", scale=8)
+    buf.seek(0)
+    return Response(buf.getvalue(), mimetype="image/png")
 
 
 @app.route("/admin")
