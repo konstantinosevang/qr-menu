@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Admin – Menu</title>
+  <style>
+    *{box-sizing:border-box}
+    body{font-family:system-ui,sans-serif;margin:0;padding:1rem;background:#1a1a2e;color:#eee}
+    a{color:#6c9bcf;text-decoration:none}
+    a:hover{text-decoration:underline}
+    h1{margin:0 0 1rem;font-size:1.5rem}
+    .nav{margin-bottom:1.5rem}
+    .nav a{margin-right:1rem}
+    .card{background:#16213e;border-radius:8px;padding:1rem;margin-bottom:1rem}
+    .card h2{margin:0 0 .75rem;font-size:1rem;color:#a0a0a0}
+    form{display:grid;gap:.75rem;max-width:400px}
+    form label{display:block;font-size:.85rem;color:#a0a0a0}
+    form input[type=text],form input[type=number],form textarea{width:100%;padding:.5rem;border:1px solid #2a2a4a;border-radius:6px;background:#0f0f23;color:#eee;font-size:1rem}
+    form textarea{min-height:60px;resize:vertical}
+    form input[type=file]{color:#a0a0a0}
+    form select{width:100%;padding:.5rem;border:1px solid #2a2a4a;border-radius:6px;background:#0f0f23;color:#eee;font-size:1rem;cursor:pointer}
+    .btn{padding:.5rem 1rem;border:none;border-radius:6px;cursor:pointer;font-size:.9rem}
+    .btn-primary{background:#4361ee;color:#fff}
+    .btn-primary:hover{background:#3a56d4}
+    .btn-danger{background:#e63946;color:#fff}
+    .btn-danger:hover{background:#d62839}
+    .btn-sm{padding:.25rem .5rem;font-size:.8rem}
+    .item-list{margin-top:1rem}
+    .item-row{display:flex;align-items:center;gap:1rem;padding:.6rem 0;border-bottom:1px solid #2a2a4a}
+    .item-row:last-child{border:none}
+    .item-row img{width:48px;height:48px;object-fit:cover;border-radius:6px}
+    .item-info{flex:1}
+    .item-title{font-weight:600}
+    .item-meta{font-size:.85rem;color:#888}
+    .item-actions{display:flex;gap:.5rem}
+    .form-row{display:flex;gap:1rem;align-items:flex-end}
+    .form-row .form-group{flex:1}
+    .img-preview{width:64px;height:64px;object-fit:cover;border-radius:6px;margin-top:.25rem}
+    .category-dropdown{position:relative;max-width:400px}
+    .category-dropdown .trigger{display:flex;align-items:center;justify-content:space-between;padding:.5rem;border:1px solid #2a2a4a;border-radius:6px;background:#0f0f23;color:#eee;cursor:pointer}
+    .category-dropdown .trigger:hover{border-color:#4361ee}
+    .category-dropdown .panel{display:none;position:absolute;top:100%;left:0;right:0;margin-top:2px;background:#16213e;border:1px solid #2a2a4a;border-radius:6px;z-index:10;max-height:200px;overflow-y:auto}
+    .category-dropdown.open .panel{display:block}
+    .category-dropdown .option{padding:.5rem 1rem;cursor:pointer}
+    .category-dropdown .option:hover{background:#2a2a4a}
+    .category-dropdown .option.add-opt{color:#6c9bcf;font-weight:500}
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:center;justify-content:center;padding:1rem}
+    .modal-overlay.open{display:flex}
+    .modal{background:#16213e;border-radius:8px;padding:1.5rem;min-width:280px;border:1px solid #2a2a4a}
+    .modal h3{margin:0 0 1rem;font-size:1rem}
+    .modal-actions{display:flex;gap:.5rem;margin-top:1rem}
+    .modal input{width:100%;padding:.5rem;border:1px solid #2a2a4a;border-radius:6px;background:#0f0f23;color:#eee;font-size:1rem}
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <a href="{{ url_for('menu') }}">← Menu</a>
+    <a href="{{ url_for('admin') }}">Admin</a>
+  </nav>
+
+  <h1>Admin</h1>
+
+  <section class="card">
+    <h2>{{ 'Edit item' if edit_item else 'Add item' }}</h2>
+    <form method="post" action="{{ url_for('admin_edit', item_id=edit_item.id) if edit_item else url_for('admin_add') }}" enctype="multipart/form-data">
+      <div class="form-group">
+        <label for="title">Title</label>
+        <input type="text" id="title" name="title" required value="{{ edit_item.title if edit_item else '' }}" placeholder="e.g. Crepes">
+      </div>
+      <div class="form-group">
+        <label for="category">Category</label>
+        {% set sel = edit_item.category if edit_item else (categories[0] if categories else 'Menu') %}
+        <input type="hidden" id="category" name="category" value="{{ sel }}">
+        <div class="category-dropdown" id="categoryDropdown">
+          <div class="trigger" onclick="document.getElementById('categoryDropdown').classList.toggle('open')">
+            <span id="categoryLabel">{{ sel }}</span>
+            <span>▼</span>
+          </div>
+          <div class="panel">
+            {% for c in categories %}
+            <div class="option" data-value="{{ c }}" onclick="pickCategory('{{ c }}')">{{ c }}</div>
+            {% endfor %}
+            <div class="option add-opt" onclick="openAddCategoryModal()">+ Add category</div>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="price">Price (€)</label>
+          <input type="number" id="price" name="price" step="0.01" min="0" value="{{ edit_item.price if edit_item else '' }}" placeholder="5.50">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="description">Description (max 20 words)</label>
+        <textarea id="description" name="description" placeholder="Short description...">{{ edit_item.description if edit_item else '' }}</textarea>
+      </div>
+      <div class="form-group">
+        <label for="image_path">Image URL (or upload below)</label>
+        <input type="text" id="image_path" name="image_path" value="{{ edit_item.image_path if edit_item else '' }}" placeholder="/static/images/... or https://...">
+        {% if edit_item and edit_item.image_path %}
+        <img class="img-preview" src="{{ edit_item.image_path }}" alt="">
+        {% endif %}
+      </div>
+      <div class="form-group">
+        <label for="image">Upload image</label>
+        <input type="file" id="image" name="image" accept=".png,.jpg,.jpeg,.gif,.webp">
+      </div>
+      <div>
+        <button type="submit" class="btn btn-primary">{{ 'Update' if edit_item else 'Add' }}</button>
+        {% if edit_item %}
+        <a href="{{ url_for('admin') }}" class="btn" style="margin-left:.5rem">Cancel</a>
+        {% endif %}
+      </div>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Items ({{ items|length }})</h2>
+    <div class="item-list">
+      {% for i in items %}
+      <div class="item-row">
+        {% if i.image_path %}
+        <img src="{{ i.image_path }}" alt="">
+        {% else %}
+        <div style="width:48px;height:48px;background:#2a2a4a;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#666;font-size:.7rem">No img</div>
+        {% endif %}
+        <div class="item-info">
+          <span class="item-title">{{ i.title }}</span>
+          <div class="item-meta">{{ i.category }} · {{ "%.2f"|format(i.price|float) }}€{% if i.options_json %} · Choices{% endif %}</div>
+        </div>
+        <div class="item-actions">
+          <a href="{{ url_for('admin_edit', item_id=i.id) }}" class="btn btn-primary btn-sm">Edit</a>
+          <form method="post" action="{{ url_for('admin_delete', item_id=i.id) }}" style="display:inline" onsubmit="return confirm('Delete {{ i.title }}?')">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+      {% if not items %}
+      <p style="color:#666">No items yet. Add one above.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <div class="modal-overlay" id="addCategoryModal" onclick="if(event.target===this)closeAddCategoryModal()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h3>Add category</h3>
+      <input type="text" id="newCategoryName" placeholder="Category name" onkeydown="if(event.key==='Enter'){event.preventDefault();addCategory();}">
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" onclick="addCategory()">Add category</button>
+        <button type="button" class="btn" style="background:#2a2a4a;color:#eee" onclick="closeAddCategoryModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function pickCategory(val) {
+      document.getElementById('category').value = val;
+      document.getElementById('categoryLabel').textContent = val;
+      document.getElementById('categoryDropdown').classList.remove('open');
+    }
+    function openAddCategoryModal() {
+      document.getElementById('categoryDropdown').classList.remove('open');
+      document.getElementById('addCategoryModal').classList.add('open');
+      document.getElementById('newCategoryName').value = '';
+      document.getElementById('newCategoryName').focus();
+    }
+    function closeAddCategoryModal() {
+      document.getElementById('addCategoryModal').classList.remove('open');
+    }
+    function addCategory() {
+      var input = document.getElementById('newCategoryName');
+      var name = input.value.trim();
+      if (!name) return;
+      var fd = new FormData();
+      fd.append('category_name', name);
+      fetch('{{ url_for("admin_category_add") }}', {
+        method: 'POST',
+        body: fd
+      }).then(function(r) {
+        if (r.ok) {
+          var panel = document.querySelector('#categoryDropdown .panel');
+          var addOpt = panel.querySelector('.add-opt');
+          var opt = document.createElement('div');
+          opt.className = 'option';
+          opt.dataset.value = name;
+          opt.textContent = name;
+          opt.onclick = function() { pickCategory(name); };
+          panel.insertBefore(opt, addOpt);
+          document.getElementById('category').value = name;
+          document.getElementById('categoryLabel').textContent = name;
+          input.value = '';
+          closeAddCategoryModal();
+        }
+      });
+    }
+    document.addEventListener('click', function(e) {
+      var dd = document.getElementById('categoryDropdown');
+      if (dd && !dd.contains(e.target)) dd.classList.remove('open');
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeAddCategoryModal();
+    });
+  </script>
+</body>
+</html>

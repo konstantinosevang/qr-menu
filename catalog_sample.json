@@ -1,0 +1,8 @@
+{
+  "status": "error",
+  "error_code": "authentication_error",
+  "message": "Authentication Failed",
+  "data": {},
+  "provisioning": {},
+  "prefetch": []
+}
