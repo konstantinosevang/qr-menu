@@ -4,6 +4,7 @@ Fetch a Foody delivery shop menu (public catalog API), download images, seed SQL
 CLI:
   python scrape_foody_seed.py --clear
   python scrape_foody_seed.py --url https://www.foody.com.cy/delivery/.../shop-name-12345
+  python scrape_foody_seed.py --url ... --only-categories "Cat A,Cat B"   # append subset (omit --clear)
 
 Programmatic: import_foody_menu(..., fetch_options=True) pulls tier choices via /v3/shops/catalog/product.
 CLI: --no-options skips those calls (faster).
@@ -299,6 +300,7 @@ def import_foody_menu(
     clear_existing: bool = True,
     download_images: bool = True,
     fetch_options: bool = True,
+    category_allowlist: frozenset[str] | None = None,
 ) -> dict[str, object]:
     """
     Fetch Foody catalog and seed the database.
@@ -344,6 +346,14 @@ def import_foody_menu(
     menu = data.get("menu") or {}
     categories = menu.get("categories") or []
     flat = dedupe_preserve_order(iter_menu_rows(categories))
+
+    if category_allowlist is not None:
+        flat = [(c, i) for c, i in flat if c in category_allowlist]
+        if not flat:
+            return {
+                "ok": False,
+                "message": "No menu items match the category filter (names must match Foody exactly).",
+            }
 
     if clear_existing:
         clear_menu_tables()
@@ -429,11 +439,21 @@ def main() -> None:
         action="store_true",
         help="Skip per-item API calls (tiers / make-your-own choices)",
     )
+    parser.add_argument(
+        "--only-categories",
+        default=None,
+        metavar="NAMES",
+        help="Comma-separated Foody category names to import (default: all). Use with --dry-run to list names.",
+    )
     args = parser.parse_args()
 
     shop_id = args.shop_id or shop_id_from_url(args.url)
     if not shop_id:
         raise SystemExit("Could not determine shop id; pass --shop-id")
+
+    allow: frozenset[str] | None = None
+    if args.only_categories:
+        allow = frozenset(s.strip() for s in args.only_categories.split(",") if s.strip())
 
     if args.dry_run:
         init_db()
@@ -445,6 +465,8 @@ def main() -> None:
         menu = data.get("menu") or {}
         categories = menu.get("categories") or []
         flat = dedupe_preserve_order(iter_menu_rows(categories))
+        if allow is not None:
+            flat = [(c, i) for c, i in flat if c in allow]
         print(f"Shop {shop_id}: {len(flat)} items after dedupe (Popular skipped).")
         by_cat: dict[str, int] = {}
         for c, _ in flat:
@@ -459,6 +481,7 @@ def main() -> None:
         clear_existing=args.clear,
         download_images=not args.no_images,
         fetch_options=not args.no_options,
+        category_allowlist=allow,
     )
     if not result.get("ok"):
         raise SystemExit(result.get("message", "Import failed"))
