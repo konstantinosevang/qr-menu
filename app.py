@@ -6,7 +6,7 @@ import uuid
 from pathlib import Path
 
 import segno
-from flask import Flask, Response, redirect, render_template, request, url_for
+from flask import Flask, Response, abort, redirect, render_template, request, url_for
 
 from database import (
     add_category,
@@ -15,6 +15,7 @@ from database import (
     get_all_items,
     get_categories,
     get_item,
+    get_item_for_display,
     get_menu_by_category,
     init_db,
     update_item,
@@ -54,7 +55,16 @@ def save_uploaded_file(file) -> str | None:
 @app.route("/menu")
 @app.route(MENU_PUBLIC_PATH)
 def menu():
-    return render_template("index.html", categories=get_menu_by_category())
+    return render_template("menu/menu.html", categories=get_menu_by_category())
+
+
+@app.route("/item/<int:item_id>")
+def item_detail(item_id: int):
+    item = get_item_for_display(item_id)
+    if not item:
+        abort(404)
+    partial = request.args.get("partial") == "1"
+    return render_template("menu/item.html", item=item, partial=partial)
 
 
 @app.route("/qr")

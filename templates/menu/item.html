@@ -1,0 +1,141 @@
+{% if not partial %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title>{{ item.title }} – Menu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --red: #ed2e2e;
+      --text: #1a1a1a;
+      --muted: #888;
+      --line: #eee;
+      --bg: #fff;
+      --sat: env(safe-area-inset-top, 0px);
+      --sab: env(safe-area-inset-bottom, 0px);
+      --sal: env(safe-area-inset-left, 0px);
+      --sar: env(safe-area-inset-right, 0px);
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Roboto", system-ui, sans-serif;
+      margin: 0;
+      padding: max(12px, var(--sat)) max(16px, var(--sar)) max(1.25rem, var(--sab)) max(16px, var(--sal));
+      background: var(--bg);
+      color: var(--text);
+      font-size: 16px;
+      line-height: 1.35;
+      -webkit-font-smoothing: antialiased;
+    }
+    .item-back {
+      display: inline-block;
+      margin-bottom: 1rem;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 500;
+    }
+    .item-back:hover { color: var(--text); }
+    .item-sheet-standalone { max-width: 520px; margin: 0 auto; }
+    .item-sheet .item-title {
+      margin: 0 0 10px;
+      font-size: 1.35rem;
+      font-weight: 500;
+      line-height: 1.25;
+    }
+    .item-sheet .item-hero {
+      width: 100%;
+      max-height: 220px;
+      object-fit: cover;
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+    .item-sheet .item-price {
+      margin: 0 0 12px;
+      font-weight: 500;
+      font-size: 1.1rem;
+      color: var(--red);
+      font-variant-numeric: tabular-nums;
+    }
+    .item-sheet .item-blurb {
+      margin: 0 0 16px;
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+    .item-sheet .item-group { margin-bottom: 16px; }
+    .item-sheet .item-group-title {
+      margin: 0 0 8px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .item-sheet .item-opts {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .item-sheet .item-opts li {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 44px;
+      padding: 8px 0;
+      font-size: 15px;
+      border-bottom: 1px solid #f4f4f4;
+    }
+    .item-sheet .item-opts li:last-child { border-bottom: none; }
+    .item-sheet .item-opt-p {
+      font-variant-numeric: tabular-nums;
+      color: var(--red);
+      white-space: nowrap;
+      font-size: 15px;
+    }
+    .item-sheet .item-opt-p.free { color: #2e7d32; }
+  </style>
+</head>
+<body>
+  <a class="item-back" href="{{ url_for('menu') }}">← Menu</a>
+  <div class="item-sheet-standalone">
+{% endif %}
+
+<div class="item-sheet">
+  <h2 id="item-sheet-title" class="item-title">{{ item.title }}</h2>
+  {% if item.image_path %}
+  <img class="item-hero" src="{{ item.image_path }}" alt="">
+  {% endif %}
+  <p class="item-price">
+    {% if item.price_label %}{{ item.price_label }}{% else %}{{ "%.2f€"|format(item.price|float) }}{% endif %}
+  </p>
+  {% if item.description %}
+  <p class="item-blurb">{{ item.description }}</p>
+  {% endif %}
+  {% for g in item.choice_groups %}
+  <div class="item-group">
+    <p class="item-group-title">{{ g.name }}{% if g.type == 'radio' %} · pick one{% else %} · any{% endif %}</p>
+    <ul class="item-opts">
+      {% for opt in g.options %}
+      <li>
+        <span>{{ opt.name }}</span>
+        <span class="item-opt-p{% if opt.price == 0 %} free{% endif %}">
+          {% if opt.price > 0 %}+{{ "%.2f€"|format(opt.price|float) }}{% else %}—{% endif %}
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endfor %}
+</div>
+
+{% if not partial %}
+  </div>
+</body>
+</html>
+{% endif %}

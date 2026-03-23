@@ -130,24 +130,6 @@
       color: var(--muted);
     }
 
-    .row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      min-height: 56px;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .row img,
-    .expandable .head img {
-      width: var(--thumb);
-      height: var(--thumb);
-      object-fit: cover;
-      border-radius: 8px;
-      flex-shrink: 0;
-    }
-
     .row-main {
       flex: 1;
       min-width: 0;
@@ -168,22 +150,7 @@
       padding: 4px 0;
     }
 
-    .more {
-      flex-shrink: 0;
-      min-width: var(--tap);
-      min-height: var(--tap);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: -6px -4px -6px 0;
-      font-size: 22px;
-      font-weight: 400;
-      line-height: 1;
-      color: var(--muted);
-      pointer-events: none;
-    }
-
-    .expandable .head {
+    .item-trigger {
       display: flex;
       align-items: center;
       gap: 12px;
@@ -199,75 +166,122 @@
       font: inherit;
       color: inherit;
       touch-action: manipulation;
-      -webkit-user-select: none;
-      user-select: none;
+      -webkit-tap-highlight-color: rgba(237, 46, 46, 0.12);
     }
 
-    .expandable .head:focus-visible {
+    .item-trigger:active {
+      background: #fafafa;
+    }
+
+    .item-trigger:focus-visible {
       outline: 2px solid var(--red);
       outline-offset: 2px;
       border-radius: 6px;
     }
 
-    .expandable.is-open .head {
-      border-bottom-color: transparent;
+    .item-trigger img {
+      width: var(--thumb);
+      height: var(--thumb);
+      object-fit: cover;
+      border-radius: 8px;
+      flex-shrink: 0;
     }
 
-    .section > article:last-child .head,
-    .section > .row:last-child {
+    .section > .item-trigger:last-child {
       border-bottom: none;
     }
 
-    .expandable.is-open .more {
-      transform: rotate(45deg);
-      color: var(--red);
+    .chev {
+      flex-shrink: 0;
+      color: var(--muted);
+      font-size: 1.25rem;
+      font-weight: 300;
+      line-height: 1;
     }
 
-    .more {
-      transition: transform 0.2s ease, color 0.15s ease;
+    dialog.item-dialog {
+      width: 100%;
+      max-width: 520px;
+      padding: 0;
+      border: none;
+      border-radius: 16px 16px 0 0;
+      margin: auto 0 0;
+      max-height: min(88vh, 900px);
+      box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.15);
+      background: var(--bg);
     }
 
-    .panel {
-      display: grid;
-      grid-template-rows: 0fr;
-      transition: grid-template-rows 0.28s ease;
+    dialog.item-dialog::backdrop {
+      background: rgba(0, 0, 0, 0.42);
     }
 
-    .expandable.is-open .panel {
-      grid-template-rows: 1fr;
+    .item-dialog-header {
+      display: flex;
+      justify-content: flex-end;
+      padding: 8px 8px 0;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 1;
     }
 
-    @media (prefers-reduced-motion: reduce) {
-      html { scroll-behavior: auto; }
-      .panel { transition: none; }
-      .more { transition: none; }
+    .item-dialog-close {
+      width: 44px;
+      height: 44px;
+      border: none;
+      background: transparent;
+      font-size: 1.75rem;
+      line-height: 1;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: 8px;
     }
 
-    .panel > div {
-      min-height: 0;
-      overflow: hidden;
+    .item-dialog-close:active {
+      background: #f5f5f5;
     }
 
-    .panel-inner {
-      padding: 0 0 max(12px, var(--sab)) calc(var(--thumb) + 12px);
+    .item-dialog-body {
+      padding: 0 max(16px, var(--sar)) max(16px, var(--sab)) max(16px, var(--sal));
+      overflow-y: auto;
+      max-height: calc(88vh - 52px);
     }
 
-    .panel-inner.no-img {
-      padding-left: 0;
+    .item-dialog-body .item-title {
+      margin: 0 0 10px;
+      font-size: 1.35rem;
+      font-weight: 500;
+      line-height: 1.25;
     }
 
-    .blurb {
+    .item-dialog-body .item-hero {
+      width: 100%;
+      max-height: 200px;
+      object-fit: cover;
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+
+    .item-dialog-body .item-price {
       margin: 0 0 12px;
+      font-weight: 500;
+      font-size: 1.1rem;
+      color: var(--red);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .item-dialog-body .item-blurb {
+      margin: 0 0 16px;
       font-size: 15px;
       line-height: 1.5;
       color: var(--muted);
     }
 
-    .group {
-      margin-bottom: 14px;
+    .item-dialog-body .item-group {
+      margin-bottom: 16px;
     }
 
-    .group-title {
+    .item-dialog-body .item-group-title {
       margin: 0 0 8px;
       font-size: 11px;
       font-weight: 500;
@@ -276,13 +290,13 @@
       color: var(--muted);
     }
 
-    .opts {
+    .item-dialog-body .item-opts {
       list-style: none;
       margin: 0;
       padding: 0;
     }
 
-    .opts li {
+    .item-dialog-body .item-opts li {
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -293,19 +307,23 @@
       border-bottom: 1px solid #f4f4f4;
     }
 
-    .opts li:last-child {
+    .item-dialog-body .item-opts li:last-child {
       border-bottom: none;
     }
 
-    .opt-p {
+    .item-dialog-body .item-opt-p {
       font-variant-numeric: tabular-nums;
       color: var(--red);
-      font-size: 15px;
       white-space: nowrap;
+      font-size: 15px;
     }
 
-    .opt-p.free {
+    .item-dialog-body .item-opt-p.free {
       color: #2e7d32;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
     }
   </style>
 </head>
@@ -325,75 +343,69 @@
     <section class="section" id="cat-{{ cat.name|replace(' ','-') }}">
       <p class="label">{{ cat.name }}</p>
       {% for i in cat['items'] %}
-        {% set expandable = i.has_choice_details or (i.description|length > 72) %}
-        {% if expandable %}
-        <article class="expandable">
-          <button
-            type="button"
-            class="head"
-            aria-expanded="false"
-            aria-controls="d-{{ i.id }}"
-            id="c-{{ i.id }}">
-            {% if i.image_path %}<img src="{{ i.image_path }}" alt="">{% endif %}
-            <span class="row-main">
-              <span class="name">{{ i.title }}</span>
-            </span>
-            <span class="price">
-              {% if i.price_label %}{{ i.price_label }}{% else %}{{ "%.2f€"|format(i.price|float) }}{% endif %}
-            </span>
-            <span class="more" aria-hidden="true">+</span>
-          </button>
-          <div class="panel" id="d-{{ i.id }}" role="region" aria-labelledby="c-{{ i.id }}" aria-hidden="true">
-            <div>
-              <div class="panel-inner{% if not i.image_path %} no-img{% endif %}">
-                {% if i.description %}
-                <p class="blurb">{{ i.description }}</p>
-                {% endif %}
-                {% for g in i.choice_groups %}
-                <div class="group">
-                  <p class="group-title">{{ g.name }}{% if g.type == 'radio' %} · one{% else %} · any{% endif %}</p>
-                  <ul class="opts">
-                    {% for opt in g.options %}
-                    <li>
-                      <span>{{ opt.name }}</span>
-                      <span class="opt-p{% if opt.price == 0 %} free{% endif %}">
-                        {% if opt.price > 0 %}+{{ "%.2f€"|format(opt.price|float) }}{% else %}—{% endif %}
-                      </span>
-                    </li>
-                    {% endfor %}
-                  </ul>
-                </div>
-                {% endfor %}
-              </div>
-            </div>
-          </div>
-        </article>
-        {% else %}
-        <div class="row">
+        <button
+          type="button"
+          class="item-trigger"
+          data-item-id="{{ i.id }}"
+          data-item-url="{{ url_for('item_detail', item_id=i.id, partial=1) }}"
+          aria-haspopup="dialog"
+          aria-controls="item-dialog">
           {% if i.image_path %}<img src="{{ i.image_path }}" alt="">{% endif %}
-          <span class="row-main"><span class="name">{{ i.title }}</span></span>
+          <span class="row-main">
+            <span class="name">{{ i.title }}</span>
+          </span>
           <span class="price">
             {% if i.price_label %}{{ i.price_label }}{% else %}{{ "%.2f€"|format(i.price|float) }}{% endif %}
           </span>
-        </div>
-        {% endif %}
+          <span class="chev" aria-hidden="true">›</span>
+        </button>
       {% endfor %}
     </section>
     {% endfor %}
   </div>
 
+  <dialog id="item-dialog" class="item-dialog" aria-modal="true" aria-labelledby="item-sheet-title">
+    <div class="item-dialog-header">
+      <button type="button" class="item-dialog-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="item-dialog-body"></div>
+  </dialog>
+
   <script>
-    document.querySelectorAll(".expandable .head").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var art = btn.closest(".expandable");
-        var panel = document.getElementById(btn.getAttribute("aria-controls"));
-        if (!art || !panel) return;
-        var open = btn.getAttribute("aria-expanded") === "true";
-        art.classList.toggle("is-open", !open);
-        btn.setAttribute("aria-expanded", open ? "false" : "true");
-        panel.setAttribute("aria-hidden", open ? "true" : "false");
-      });
-    });
+    (function () {
+      var dlg = document.getElementById("item-dialog");
+      var bodyEl = dlg && dlg.querySelector(".item-dialog-body");
+      var closeBtn = dlg && dlg.querySelector(".item-dialog-close");
+      if (dlg && bodyEl) {
+        document.querySelectorAll(".item-trigger").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var url = btn.getAttribute("data-item-url");
+            if (!url) return;
+            bodyEl.innerHTML = '<p style="color:#888;padding:1rem 0">Loading…</p>';
+            dlg.showModal();
+            fetch(url, { headers: { Accept: "text/html" } })
+              .then(function (r) {
+                if (!r.ok) throw new Error("load");
+                return r.text();
+              })
+              .then(function (html) {
+                bodyEl.innerHTML = html;
+              })
+              .catch(function () {
+                bodyEl.innerHTML = '<p style="color:#888;padding:1rem 0">Could not load item.</p>';
+              });
+          });
+        });
+        if (closeBtn) {
+          closeBtn.addEventListener("click", function () {
+            dlg.close();
+          });
+        }
+        dlg.addEventListener("click", function (e) {
+          if (e.target === dlg) dlg.close();
+        });
+      }
+    })();
 
     (function () {
       var sections = document.querySelectorAll(".section[id]");

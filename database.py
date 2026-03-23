@@ -178,6 +178,18 @@ def get_item(item_id: int):
     return dict(row) if row else None
 
 
+def get_item_for_display(item_id: int) -> dict | None:
+    """Single item with parsed choice_groups for public menu / item sheet."""
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT id, title, category, price, description, image_path, options_json FROM menu_items WHERE id = ?",
+        (item_id,),
+    ).fetchone()
+    conn.close()
+    return _enrich_item_for_display(row) if row else None
+
+
 def update_item(
     item_id: int,
     title: str,
