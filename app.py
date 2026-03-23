@@ -1,8 +1,10 @@
 """Flask menu server. Run: python app.py"""
-import threading
+import os
+import socket
 import uuid
 from pathlib import Path
 
+import segno
 from flask import Flask, redirect, render_template, request, url_for
 
 from database import (
@@ -124,71 +126,24 @@ def admin_category_add():
     return redirect(request.referrer or url_for("admin"))
 
 
-def _prompt_yes_no(question: str) -> bool:
-    while True:
-        answer = input(f"{question} [y/n]: ").strip().lower()
-        if answer in ("y", "yes"):
-            return True
-        if answer in ("n", "no"):
-            return False
-        print("Please type y or n.")
-
-
 if __name__ == "__main__":
-    port = 5000
-    use_ngrok = _prompt_yes_no("Use ngrok for a public URL")
-
-    def run_flask():
-        app.run(host="0.0.0.0", port=port, use_reloader=False)
-
-    thread = threading.Thread(target=run_flask, daemon=True)
-    thread.start()
-
-    import time
-    time.sleep(2)
-
-    menu_url = None
-    admin_url = None
-
-    if use_ngrok:
-        try:
-            from pyngrok import ngrok
-
-            tunnel = ngrok.connect(port)
-            base_url = tunnel.public_url.rstrip("/")
-            menu_url = f"{base_url}/menu"
-            admin_url = f"{base_url}/admin"
-            print(f"Menu (public): {menu_url}")
-            print(f"Admin: {admin_url}")
-        except Exception as e:
-            import socket
-
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("8.8.8.8", 80))
-            ip = s.getsockname()[0]
-            s.close()
-            menu_url = f"http://{ip}:{port}/menu"
-            admin_url = f"http://{ip}:{port}/admin"
-            print(f"ngrok failed ({e}), using local IP")
-            print(f"Menu (local): {menu_url}")
-            print(f"Admin: {admin_url}")
-            print("Tip: Set NGROK_AUTH_TOKEN for public access (sign up at ngrok.com)")
-    else:
-        import socket
-
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    port = int(os.environ.get("PORT", "5000"))
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
         s.connect(("8.8.8.8", 80))
         ip = s.getsockname()[0]
+    except OSError:
+        ip = "127.0.0.1"
+    finally:
         s.close()
-        menu_url = f"http://{ip}:{port}/menu"
-        admin_url = f"http://{ip}:{port}/admin"
-        print("Skipping ngrok.")
-        print(f"Menu (local): {menu_url}")
-        print(f"Admin: {admin_url}")
 
-    import segno
+    menu_url = f"http://{ip}:{port}/menu"
+    admin_url = f"http://{ip}:{port}/admin"
+    print(f"Menu: {menu_url}")
+    print(f"Admin: {admin_url}")
+
     segno.make(menu_url).save("menu-qr.png", scale=8)
     segno.make(admin_url).save("admin-qr.png", scale=8)
-    print(f"QR: menu-qr.png, admin-qr.png")
+    print("QR codes: menu-qr.png, admin-qr.png")
 
-    thread.join()
+    app.run(host="0.0.0.0", port=port, use_reloader=False)
