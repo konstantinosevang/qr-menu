@@ -12,6 +12,12 @@
     h1{margin:0 0 1rem;font-size:1.5rem}
     .nav{margin-bottom:1.5rem}
     .nav a{margin-right:1rem}
+    .dash-tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin:0 0 1rem}
+    .tab-btn{padding:.5rem .75rem;border:1px solid #2a2a4a;border-radius:10px;background:#0f0f23;color:#eee;cursor:pointer;font-size:.9rem}
+    .tab-btn:hover{border-color:#4361ee}
+    .tab-btn.active{background:#4361ee;border-color:#4361ee}
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
     .card{background:#16213e;border-radius:8px;padding:1rem;margin-bottom:1rem}
     .card h2{margin:0 0 .75rem;font-size:1rem;color:#a0a0a0}
     form{display:grid;gap:.75rem;max-width:400px}
@@ -51,9 +57,25 @@
     .modal h3{margin:0 0 1rem;font-size:1rem}
     .modal-actions{display:flex;gap:.5rem;margin-top:1rem}
     .modal input{width:100%;padding:.5rem;border:1px solid #2a2a4a;border-radius:6px;background:#0f0f23;color:#eee;font-size:1rem}
+    .cat-org{max-width:520px}
+    .cat-row{display:flex;align-items:center;gap:.75rem;min-height:56px;padding:.7rem .75rem;border:1px solid #2a2a4a;border-radius:10px;background:#0f0f23;margin:.5rem 0}
+    .cat-pos{width:56px;flex:0 0 56px}
+    .cat-pos input{width:100%;height:44px;border-radius:10px;background:#16213e;border:1px solid #2a2a4a;color:#eee;text-align:center;font-size:1rem;font-variant-numeric:tabular-nums;padding:0 .25rem}
+    .cat-pos input:focus{outline:none;border-color:#4361ee;box-shadow:0 0 0 2px rgba(67,97,238,.25)}
+    .cat-pos input{appearance:textfield}
+    .cat-pos input::-webkit-outer-spin-button,.cat-pos input::-webkit-inner-spin-button{appearance:none;-webkit-appearance:none;margin:0}
+    .cat-pos input[type=number]{-moz-appearance:textfield}
+    .cat-name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:1rem}
+    .cat-actions{display:flex;gap:.5rem}
+    .btn-ghost{background:#2a2a4a;color:#eee}
+    .btn-ghost:hover{filter:brightness(1.05)}
+    .cat-actions .btn{min-width:44px;min-height:44px;padding:0;border-radius:10px;font-size:1.05rem;display:inline-flex;align-items:center;justify-content:center}
+    .cat-actions .btn:active{filter:brightness(1.08)}
+    .cat-actions .btn:focus-visible{outline:2px solid #4361ee;outline-offset:2px}
+    .cat-status{font-size:.85rem;color:#888;margin-top:.5rem;min-height:1.2em}
   </style>
 </head>
-<body>
+<body data-default-tab="{{ 'tab-item' if edit_item else 'tab-items' }}">
   <nav class="nav">
     <a href="{{ url_for('menu') }}">← Menu</a>
     <a href="{{ url_for('admin') }}">Admin</a>
@@ -61,87 +83,129 @@
 
   <h1>Admin</h1>
 
-  <section class="card">
-    <h2>{{ 'Edit item' if edit_item else 'Add item' }}</h2>
-    <form method="post" action="{{ url_for('admin_edit', item_id=edit_item.id) if edit_item else url_for('admin_add') }}" enctype="multipart/form-data">
-      <div class="form-group">
-        <label for="title">Title</label>
-        <input type="text" id="title" name="title" required value="{{ edit_item.title if edit_item else '' }}" placeholder="e.g. Crepes">
-      </div>
-      <div class="form-group">
-        <label for="category">Category</label>
-        {% set sel = edit_item.category if edit_item else (categories[0] if categories else 'Menu') %}
-        <input type="hidden" id="category" name="category" value="{{ sel }}">
-        <div class="category-dropdown" id="categoryDropdown">
-          <div class="trigger" onclick="document.getElementById('categoryDropdown').classList.toggle('open')">
-            <span id="categoryLabel">{{ sel }}</span>
-            <span>▼</span>
-          </div>
-          <div class="panel">
-            {% for c in categories %}
-            <div class="option" data-value="{{ c }}" onclick="pickCategory('{{ c }}')">{{ c }}</div>
-            {% endfor %}
-            <div class="option add-opt" onclick="openAddCategoryModal()">+ Add category</div>
-          </div>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label for="price">Price (€)</label>
-          <input type="number" id="price" name="price" step="0.01" min="0" value="{{ edit_item.price if edit_item else '' }}" placeholder="5.50">
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="description">Description (max 20 words)</label>
-        <textarea id="description" name="description" placeholder="Short description...">{{ edit_item.description if edit_item else '' }}</textarea>
-      </div>
-      <div class="form-group">
-        <label for="image_path">Image URL (or upload below)</label>
-        <input type="text" id="image_path" name="image_path" value="{{ edit_item.image_path if edit_item else '' }}" placeholder="/static/images/... or https://...">
-        {% if edit_item and edit_item.image_path %}
-        <img class="img-preview" src="{{ edit_item.image_path }}" alt="">
-        {% endif %}
-      </div>
-      <div class="form-group">
-        <label for="image">Upload image</label>
-        <input type="file" id="image" name="image" accept=".png,.jpg,.jpeg,.gif,.webp">
-      </div>
-      <div>
-        <button type="submit" class="btn btn-primary">{{ 'Update' if edit_item else 'Add' }}</button>
-        {% if edit_item %}
-        <a href="{{ url_for('admin') }}" class="btn" style="margin-left:.5rem">Cancel</a>
-        {% endif %}
-      </div>
-    </form>
-  </section>
+  <div class="dash-tabs" role="tablist" aria-label="Admin sections">
+    <button type="button" class="tab-btn" data-tab="tab-item" role="tab">Add Item</button>
+    <button type="button" class="tab-btn" data-tab="tab-categories" role="tab">Categories</button>
+    <button type="button" class="tab-btn" data-tab="tab-items" role="tab">Items</button>
+  </div>
 
-  <section class="card">
-    <h2>Items ({{ items|length }})</h2>
-    <div class="item-list">
-      {% for i in items %}
-      <div class="item-row">
-        {% if i.image_path %}
-        <img src="{{ i.image_path }}" alt="">
-        {% else %}
-        <div style="width:48px;height:48px;background:#2a2a4a;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#666;font-size:.7rem">No img</div>
-        {% endif %}
-        <div class="item-info">
-          <span class="item-title">{{ i.title }}</span>
-          <div class="item-meta">{{ i.category }} · {{ "%.2f"|format(i.price|float) }}€{% if i.options_json %} · Choices{% endif %}</div>
+  <div class="tab-panel" id="tab-item" role="tabpanel">
+    <section class="card">
+      <h2>{{ 'Edit item' if edit_item else 'Add item' }}</h2>
+      <form method="post" action="{{ url_for('admin_edit', item_id=edit_item.id) if edit_item else url_for('admin_add') }}" enctype="multipart/form-data">
+        <div class="form-group">
+          <label for="title">Title</label>
+          <input type="text" id="title" name="title" required value="{{ edit_item.title if edit_item else '' }}" placeholder="e.g. Crepes">
         </div>
-        <div class="item-actions">
-          <a href="{{ url_for('admin_edit', item_id=i.id) }}" class="btn btn-primary btn-sm">Edit</a>
-          <form method="post" action="{{ url_for('admin_delete', item_id=i.id) }}" style="display:inline" onsubmit="return confirm('Delete {{ i.title }}?')">
-            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-          </form>
+        <div class="form-group">
+          <label for="category">Category</label>
+          {% set sel = edit_item.category if edit_item else (categories[0] if categories else 'Menu') %}
+          <input type="hidden" id="category" name="category" value="{{ sel }}">
+          <div class="category-dropdown" id="categoryDropdown">
+            <div class="trigger" onclick="document.getElementById('categoryDropdown').classList.toggle('open')">
+              <span id="categoryLabel">{{ sel }}</span>
+              <span>▼</span>
+            </div>
+            <div class="panel">
+              {% for c in categories %}
+              <div class="option" data-value="{{ c }}" onclick="pickCategory('{{ c }}')">{{ c }}</div>
+              {% endfor %}
+              <div class="option add-opt" onclick="openAddCategoryModal()">+ Add category</div>
+            </div>
+          </div>
         </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="price">Price (€)</label>
+            <input type="number" id="price" name="price" step="0.01" min="0" value="{{ edit_item.price if edit_item else '' }}" placeholder="5.50">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="description">Description (max 20 words)</label>
+          <textarea id="description" name="description" placeholder="Short description...">{{ edit_item.description if edit_item else '' }}</textarea>
+        </div>
+        <div class="form-group">
+          <label for="image_path">Image URL (or upload below)</label>
+          <input type="text" id="image_path" name="image_path" value="{{ edit_item.image_path if edit_item else '' }}" placeholder="/static/images/... or https://...">
+          {% if edit_item and edit_item.image_path %}
+          <img class="img-preview" src="{{ edit_item.image_path }}" alt="">
+          {% endif %}
+        </div>
+        <div class="form-group">
+          <label for="image">Upload image</label>
+          <input type="file" id="image" name="image" accept=".png,.jpg,.jpeg,.gif,.webp">
+        </div>
+        <div>
+          <button type="submit" class="btn btn-primary">{{ 'Update' if edit_item else 'Add' }}</button>
+          {% if edit_item %}
+          <a href="{{ url_for('admin') }}" class="btn" style="margin-left:.5rem">Cancel</a>
+          {% endif %}
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div class="tab-panel" id="tab-categories" role="tabpanel">
+    <section class="card">
+      <h2>Categories</h2>
+      <div class="cat-org">
+        <div style="color:#888;font-size:.9rem;margin-bottom:.5rem">
+          Use ↑/↓ to reorder. This controls the order on the public menu and in the admin dropdown.
+        </div>
+        <div id="categoryOrganizer">
+          {% for c in categories %}
+          <div class="cat-row" data-name="{{ c }}">
+            <div class="cat-pos">
+              <input
+                type="number"
+                min="1"
+                step="1"
+                inputmode="numeric"
+                aria-label="Category position"
+                value="{{ loop.index }}">
+            </div>
+            <div class="cat-name">{{ c }}</div>
+            <div class="cat-actions">
+              <button type="button" class="btn btn-sm btn-ghost" data-move="up" aria-label="Move up">↑</button>
+              <button type="button" class="btn btn-sm btn-ghost" data-move="down" aria-label="Move down">↓</button>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="cat-status" id="catOrderStatus"></div>
       </div>
-      {% endfor %}
-      {% if not items %}
-      <p style="color:#666">No items yet. Add one above.</p>
-      {% endif %}
-    </div>
-  </section>
+    </section>
+  </div>
+
+  <div class="tab-panel" id="tab-items" role="tabpanel">
+    <section class="card">
+      <h2>Items ({{ items|length }})</h2>
+      <div class="item-list">
+        {% for i in items %}
+        <div class="item-row">
+          {% if i.image_path %}
+          <img src="{{ i.image_path }}" alt="">
+          {% else %}
+          <div style="width:48px;height:48px;background:#2a2a4a;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#666;font-size:.7rem">No img</div>
+          {% endif %}
+          <div class="item-info">
+            <span class="item-title">{{ i.title }}</span>
+            <div class="item-meta">{{ i.category }} · {{ "%.2f"|format(i.price|float) }}€{% if i.options_json %} · Choices{% endif %}</div>
+          </div>
+          <div class="item-actions">
+            <a href="{{ url_for('admin_edit', item_id=i.id) }}" class="btn btn-primary btn-sm">Edit</a>
+            <form method="post" action="{{ url_for('admin_delete', item_id=i.id) }}" style="display:inline" onsubmit="return confirm('Delete {{ i.title }}?')">
+              <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+        {% if not items %}
+        <p style="color:#666">No items yet. Add one above.</p>
+        {% endif %}
+      </div>
+    </section>
+  </div>
 
   <div class="modal-overlay" id="addCategoryModal" onclick="if(event.target===this)closeAddCategoryModal()">
     <div class="modal" onclick="event.stopPropagation()">
@@ -202,6 +266,164 @@
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') closeAddCategoryModal();
     });
+
+    (function initCategoryOrganizer() {
+      var box = document.getElementById('categoryOrganizer');
+      var status = document.getElementById('catOrderStatus');
+      if (!box) return;
+
+      function rows() {
+        return Array.prototype.slice.call(box.querySelectorAll('.cat-row'));
+      }
+      function setStatus(msg, isError) {
+        if (!status) return;
+        status.textContent = msg || '';
+        status.style.color = isError ? '#e63946' : '#888';
+      }
+      function currentOrder() {
+        return rows().map(function(r){ return r.getAttribute('data-name'); });
+      }
+      function renumber() {
+        rows().forEach(function(r, idx) {
+          var n = idx + 1;
+          var input = r.querySelector('.cat-pos input');
+          if (input) input.value = String(n);
+        });
+      }
+      function clampInt(val, min, max) {
+        var n = parseInt(val, 10);
+        if (isNaN(n)) return null;
+        if (n < min) return min;
+        if (n > max) return max;
+        return n;
+      }
+      function moveRowToIndex(row, targetIndex0) {
+        var all = rows();
+        if (!row) return;
+        var n = all.length;
+        if (!n) return;
+        if (targetIndex0 < 0) targetIndex0 = 0;
+        if (targetIndex0 > n - 1) targetIndex0 = n - 1;
+        var before = all[targetIndex0];
+        if (!before) return;
+        if (before === row) return;
+        box.insertBefore(row, before);
+      }
+      function persist() {
+        setStatus('Saving…');
+        fetch('{{ url_for("admin_category_reorder") }}', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order: currentOrder() })
+        }).then(function(r){
+          if (!r.ok) throw new Error('save');
+          setStatus('Saved.');
+          window.setTimeout(function(){ setStatus(''); }, 1200);
+        }).catch(function(){
+          setStatus('Could not save category order.', true);
+        });
+      }
+
+      box.addEventListener('click', function(e){
+        var btn = e.target && e.target.closest ? e.target.closest('button[data-move]') : null;
+        if (!btn) return;
+        var row = btn.closest('.cat-row');
+        if (!row) return;
+        var move = btn.getAttribute('data-move');
+        if (move === 'up') {
+          var prev = row.previousElementSibling;
+          if (prev) box.insertBefore(row, prev);
+        } else if (move === 'down') {
+          var next = row.nextElementSibling;
+          if (next) box.insertBefore(next, row);
+        }
+        renumber();
+        persist();
+      });
+
+      box.addEventListener('focusin', function(e) {
+        var input = e.target;
+        if (!input || !(input.matches && input.matches('.cat-pos input'))) return;
+        // Keep a baseline so we can revert on invalid input.
+        input.dataset.startValue = input.value;
+        // Optional convenience: select all for quick typing.
+        try { input.select(); } catch (_) {}
+      });
+      function commitPositionInput(input) {
+        var row = input.closest('.cat-row');
+        if (!row) return;
+        var all = rows();
+        var n = all.length;
+        var desired1 = clampInt(input.value, 1, n);
+        if (desired1 === null) {
+          input.value = input.dataset.startValue || input.value;
+          return;
+        }
+        var idx0 = desired1 - 1;
+        // Recompute current list to account for any moves.
+        all = rows();
+        var currentIdx = all.indexOf(row);
+        if (currentIdx === -1) return;
+        if (idx0 === currentIdx) {
+          renumber();
+          return;
+        }
+        // Insert before the element currently at idx0 (after removing row from consideration).
+        // If moving downwards, inserting before idx0+1 keeps correct final position.
+        var target = idx0;
+        if (idx0 > currentIdx) target = idx0 + 1;
+        var afterMoveAll = rows();
+        var before = afterMoveAll[target] || null;
+        box.insertBefore(row, before);
+        renumber();
+        persist();
+      }
+      box.addEventListener('keydown', function(e) {
+        var input = e.target;
+        if (!input || !(input.matches && input.matches('.cat-pos input'))) return;
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          commitPositionInput(input);
+          input.blur();
+        } else if (e.key === 'Escape') {
+          input.value = input.dataset.startValue || input.value;
+          input.blur();
+        }
+      });
+      box.addEventListener('blur', function(e) {
+        var input = e.target;
+        if (!input || !(input.matches && input.matches('.cat-pos input'))) return;
+        commitPositionInput(input);
+      }, true);
+
+      renumber();
+    })();
+
+    (function initDashboardTabs() {
+      var btns = Array.prototype.slice.call(document.querySelectorAll('.tab-btn[data-tab]'));
+      var panels = Array.prototype.slice.call(document.querySelectorAll('.tab-panel[id]'));
+      if (!btns.length || !panels.length) return;
+
+      function show(id) {
+        btns.forEach(function(b){
+          b.classList.toggle('active', b.getAttribute('data-tab') === id);
+          b.setAttribute('aria-selected', b.getAttribute('data-tab') === id ? 'true' : 'false');
+        });
+        panels.forEach(function(p){
+          p.classList.toggle('active', p.id === id);
+        });
+      }
+
+      btns.forEach(function(b){
+        b.addEventListener('click', function(){
+          show(b.getAttribute('data-tab'));
+        });
+      });
+
+      // Default tab is provided by server on <body>.
+      var defaultId = (document.body && document.body.getAttribute('data-default-tab')) || 'tab-items';
+      show(defaultId);
+    })();
   </script>
 </body>
 </html>

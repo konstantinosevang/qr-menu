@@ -18,6 +18,7 @@ from database import (
     get_item_for_display,
     get_menu_by_category,
     init_db,
+    reorder_categories,
     update_item,
 )
 
@@ -153,6 +154,16 @@ def admin_category_add():
     if name:
         add_category(name)
     return redirect(request.referrer or url_for("admin"))
+
+
+@app.route("/admin/category/reorder", methods=["POST"])
+def admin_category_reorder():
+    data = request.get_json(silent=True) or {}
+    order = data.get("order") or []
+    if isinstance(order, list):
+        reorder_categories(order)
+        return ("", 204)
+    return ("bad request", 400)
 
 
 if __name__ == "__main__":

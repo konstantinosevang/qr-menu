@@ -18,13 +18,25 @@ def _migrate_menu_items(conn):
         conn.execute("ALTER TABLE menu_items ADD COLUMN options_json TEXT")
 
 
+def _migrate_categories(conn):
+    cur = conn.execute("PRAGMA table_info(categories)")
+    cols = {row[1] for row in cur.fetchall()}
+    if "sort_order" not in cols:
+        conn.execute("ALTER TABLE categories ADD COLUMN sort_order INTEGER")
+        # Backfill with stable ordering (current name ordering).
+        rows = conn.execute("SELECT id FROM categories ORDER BY name").fetchall()
+        for idx, (cat_id,) in enumerate(rows):
+            conn.execute("UPDATE categories SET sort_order = ? WHERE id = ?", (idx, cat_id))
+
+
 def init_db():
     """Create tables if they don't exist."""
     conn = get_connection()
     conn.execute("""
         CREATE TABLE IF NOT EXISTS categories (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE NOT NULL
+            name TEXT UNIQUE NOT NULL,
+            sort_order INTEGER
         )
     """)
     conn.execute("""
@@ -38,6 +50,7 @@ def init_db():
             options_json TEXT
         )
     """)
+    _migrate_categories(conn)
     _migrate_menu_items(conn)
     # Migrate existing categories from menu_items into categories table
     cur = conn.execute("SELECT DISTINCT category FROM menu_items")
@@ -48,15 +61,20 @@ def init_db():
         )
     # Ensure at least one category exists
     if conn.execute("SELECT COUNT(*) FROM categories").fetchone()[0] == 0:
-        conn.execute("INSERT INTO categories (name) VALUES ('Menu')")
+        conn.execute("INSERT INTO categories (name, sort_order) VALUES ('Menu', 0)")
+    # Ensure sort_order exists for rows inserted without it.
+    max_sort = conn.execute("SELECT COALESCE(MAX(sort_order), -1) FROM categories").fetchone()[0]
+    missing = conn.execute("SELECT id FROM categories WHERE sort_order IS NULL ORDER BY name").fetchall()
+    for offset, (cat_id,) in enumerate(missing, start=1):
+        conn.execute("UPDATE categories SET sort_order = ? WHERE id = ?", (max_sort + offset, cat_id))
     conn.commit()
     conn.close()
 
 
 def get_categories():
-    """Return all categories sorted by name."""
+    """Return all categories sorted by configured order."""
     conn = get_connection()
-    cur = conn.execute("SELECT name FROM categories ORDER BY name")
+    cur = conn.execute("SELECT name FROM categories ORDER BY sort_order IS NULL, sort_order, name")
     rows = cur.fetchall()
     conn.close()
     return [r[0] for r in rows]
@@ -69,11 +87,42 @@ def add_category(name: str) -> bool:
         return False
     conn = get_connection()
     try:
-        conn.execute("INSERT INTO categories (name) VALUES (?)", (name,))
+        next_sort = conn.execute(
+            "SELECT COALESCE(MAX(sort_order), -1) + 1 FROM categories"
+        ).fetchone()[0]
+        conn.execute(
+            "INSERT INTO categories (name, sort_order) VALUES (?, ?)",
+            (name, next_sort),
+        )
         conn.commit()
         return True
     except sqlite3.IntegrityError:
         return False
+    finally:
+        conn.close()
+
+
+def reorder_categories(category_names: list[str]) -> None:
+    """Persist category ordering by name list (first item becomes sort_order=0)."""
+    if not isinstance(category_names, list):
+        return
+    names = [str(n).strip() for n in category_names if str(n).strip()]
+    if len(names) != len(set(names)):
+        return
+    conn = get_connection()
+    try:
+        existing = {
+            row[0]
+            for row in conn.execute("SELECT name FROM categories").fetchall()
+        }
+        if not set(names).issubset(existing):
+            return
+        for idx, name in enumerate(names):
+            conn.execute(
+                "UPDATE categories SET sort_order = ? WHERE name = ?",
+                (idx, name),
+            )
+        conn.commit()
     finally:
         conn.close()
 
@@ -110,18 +159,21 @@ def get_menu_by_category():
     conn = get_connection()
     conn.row_factory = sqlite3.Row
     cur = conn.execute(
-        "SELECT id, title, category, price, description, image_path, options_json "
-        "FROM menu_items ORDER BY category, title"
+        "SELECT c.name AS category_name, m.id, m.title, m.category, m.price, m.description, m.image_path, m.options_json "
+        "FROM categories c "
+        "LEFT JOIN menu_items m ON m.category = c.name "
+        "ORDER BY c.sort_order IS NULL, c.sort_order, c.name, m.title"
     )
     rows = cur.fetchall()
     conn.close()
 
-    categories = {}
+    categories: dict[str, list[dict]] = {}
     for row in rows:
-        cat = row["category"]
+        cat = row["category_name"]
         if cat not in categories:
             categories[cat] = []
-        categories[cat].append(_enrich_item_for_display(row))
+        if row["id"] is not None:
+            categories[cat].append(_enrich_item_for_display(row))
     return [{"name": k, "items": v} for k, v in categories.items()]
 
 
@@ -158,8 +210,10 @@ def get_all_items():
     conn = get_connection()
     conn.row_factory = sqlite3.Row
     cur = conn.execute(
-        "SELECT id, title, category, price, description, image_path, options_json "
-        "FROM menu_items ORDER BY category, title"
+        "SELECT m.id, m.title, m.category, m.price, m.description, m.image_path, m.options_json "
+        "FROM menu_items m "
+        "LEFT JOIN categories c ON c.name = m.category "
+        "ORDER BY c.sort_order IS NULL, c.sort_order, m.category, m.title"
     )
     rows = cur.fetchall()
     conn.close()
